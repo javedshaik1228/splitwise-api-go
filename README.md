@@ -1,0 +1,1 @@
+# Splitwise Rest API written in Go
