@@ -1,15 +1,41 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"splitwise/configs"
 	"splitwise/controller"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
+func InitDB() (*gorm.DB, error) {
+
+	cnxStr := configs.GetDbCnxString()
+	if cnxStr == "" {
+		log.Fatalf("DB connection string is empty")
+		return nil, errors.New("Invalid connection string")
+	}
+
+	db, err := gorm.Open(postgres.Open(cnxStr), &gorm.Config{})
+	if err != nil {
+		return nil, err
+	}
+
+	return db, nil
+}
+
 func main() {
-	db, err := configs.InitDB()
+
+	err := godotenv.Load("configs/.env")
+	if err != nil {
+		log.Fatalf("error loading .env file")
+	}
+
+	db, err := InitDB()
 	if err != nil {
 		log.Fatal("Error while connecting to db")
 	}

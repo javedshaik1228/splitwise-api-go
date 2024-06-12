@@ -3,10 +3,8 @@ package configs
 import (
 	"errors"
 	"fmt"
+	"log"
 	"os"
-
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
 )
 
 type DbConfig struct {
@@ -17,27 +15,27 @@ type DbConfig struct {
 	db_port string
 }
 
-func GetDbConfig() (*DbConfig, error) {
-	dbUser := os.Getenv("SW_DB_USER")
-	dbPwd := os.Getenv("SW_DB_PASSWORD")
-	dbName := os.Getenv("SW_DB_NAME")
-	dbHost := os.Getenv("SW_DB_HOST")
-	dbPort := os.Getenv("SW_DB_PORT")
+func getDbConfig() (*DbConfig, error) {
+	dbUser := os.Getenv("DB_USER")
+	dbPwd := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
 
 	if dbUser == "" {
-		return nil, errors.New("SW_DB_USER environment variable is required")
+		return nil, errors.New("DB_USER environment variable is required")
 	}
 	if dbPwd == "" {
-		return nil, errors.New("SW_DB_PASSWORD environment variable is required")
+		return nil, errors.New("DB_PASSWORD environment variable is required")
 	}
 	if dbName == "" {
-		return nil, errors.New("SW_DB_NAME environment variable is required")
+		return nil, errors.New("DB_NAME environment variable is required")
 	}
 	if dbHost == "" {
-		return nil, errors.New("SW_DB_HOST environment variable is required")
+		return nil, errors.New("DB_HOST environment variable is required")
 	}
 	if dbPort == "" {
-		return nil, errors.New("SW_DB_PORT environment variable is required")
+		return nil, errors.New("DB_PORT environment variable is required")
 	}
 
 	return &DbConfig{
@@ -49,19 +47,13 @@ func GetDbConfig() (*DbConfig, error) {
 	}, nil
 }
 
-func InitDB() (*gorm.DB, error) {
-	config, err := GetDbConfig()
+func GetDbCnxString() string {
+	config, err := getDbConfig()
 	if err != nil {
-		fmt.Printf("Error: %v\n", err)
-		return nil, err
+		log.Printf("Error: %v\n", err)
+		return ""
 	}
-
-	dsn := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s port=%s",
+	cnxStr := fmt.Sprintf("host=%s user=%s dbname=%s sslmode=disable password=%s port=%s",
 		config.db_host, config.db_user, config.db_name, config.db_pwd, config.db_port)
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
+	return cnxStr
 }

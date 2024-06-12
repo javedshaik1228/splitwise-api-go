@@ -7,6 +7,9 @@
 *.test
 *.out
 
+# env file containing configs for db and app
+/configs/.env
+
 # Output of the go coverage tool, specifically when used with LiteIDE
 *.cover
 

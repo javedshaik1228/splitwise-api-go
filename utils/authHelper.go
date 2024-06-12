@@ -1,9 +1,9 @@
 package utils
 
 import (
-	"fmt"
-	"net/http"
+	"errors"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -15,12 +15,25 @@ type Claims struct {
 	jwt.RegisteredClaims
 }
 
-var jwtKey = []byte(os.Getenv("SW_JWT_KEY"))
+var jwtKey = []byte(os.Getenv("JWT_KEY"))
+
+func getExpirationTime() (*time.Time, error) {
+	var expTimeStr = os.Getenv("AUTH_EXP_TIME")
+	authExpTime, err := strconv.Atoi(expTimeStr)
+	if err != nil {
+		return nil, errors.New("AUTH_EXP_TIME must be a valid integer")
+	}
+	expirationTime := time.Now().Add(time.Duration(authExpTime) * time.Minute)
+	return &expirationTime, nil
+}
 
 func GenerateJWT(userId uint) (string, error) {
 
-	expirationTime := time.Now().Add(60 * time.Minute)
-	// TODO change expiration time
+	tokenExpTime, err := getExpirationTime()
+	if err != nil {
+		return "", err
+	}
+
 	claims := &Claims{
 		UserID: userId,
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -28,7 +41,7 @@ func GenerateJWT(userId uint) (string, error) {
 			Subject:   "user",
 			Audience:  jwt.ClaimStrings{"splitwise_users"},
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(expirationTime),
+			ExpiresAt: jwt.NewNumericDate(*tokenExpTime),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -40,19 +53,17 @@ func GenerateJWT(userId uint) (string, error) {
 	return tokenString, nil
 }
 
-func ValidateUserLogin(c *gin.Context) (*Claims, bool) {
+func ValidateUserLogin(c *gin.Context) (*Claims, error) {
 	tokenString := c.Request.Header.Get("token")
 	if tokenString == "" {
-		c.JSON(http.StatusUnauthorized, gin.H{"Auth error": "No authorization token provided"})
-		return nil, false
+		return nil, errors.New("no authorization token provided")
 	}
 
 	claims, err := validateJWT(tokenString)
 	if err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"Auth error": err.Error()})
-		return nil, false
+		return nil, err
 	}
-	return claims, true
+	return claims, nil
 }
 
 func validateJWT(tokenString string) (*Claims, error) {
@@ -67,17 +78,17 @@ func validateJWT(tokenString string) (*Claims, error) {
 	}
 
 	if !token.Valid {
-		return nil, fmt.Errorf("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
 	expTime, err := claims.GetExpirationTime()
 
 	if err != nil {
-		return nil, fmt.Errorf("invalid token")
+		return nil, errors.New("invalid token")
 	}
 
 	if expTime.Before(time.Now()) {
-		return nil, fmt.Errorf("token expired, please login again")
+		return nil, errors.New("token expired, please login again")
 	}
 
 	return claims, nil

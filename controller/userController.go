@@ -22,13 +22,13 @@ func SignupHandler(db *gorm.DB, c *gin.Context) {
 	var creds Credentials
 
 	if err := c.BindJSON(&creds); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Binding error": err.Error()})
+		SendError(ErrBadRequest, err.Error(), c)
 		return
 	}
 
 	hashedPwd, err := bcrypt.GenerateFromPassword([]byte(creds.PlainTextPwd), 14)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Internal Error": err.Error()})
+		SendError(ErrInternalFailure, err.Error(), c)
 	}
 
 	var user models.User
@@ -36,8 +36,8 @@ func SignupHandler(db *gorm.DB, c *gin.Context) {
 	user.Email = creds.Email
 	user.PasswordHash = string(hashedPwd)
 
-	if db.Create(&user).Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Internal error": "Failed to create user"})
+	if err := db.Create(&user).Error; err != nil {
+		SendError(ErrInternalFailure, err.Error(), c)
 		return
 	}
 
@@ -47,29 +47,30 @@ func SignupHandler(db *gorm.DB, c *gin.Context) {
 func LoginHandler(db *gorm.DB, c *gin.Context) {
 	var creds Credentials
 	if err := c.BindJSON(&creds); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"Binding error": err.Error()})
+		SendError(ErrBadRequest, err.Error(), c)
 		return
 	}
 
 	var user models.User
 	result := db.Where("username = ?", creds.Username).First(&user)
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"Error": "Invalid username"})
+		SendError(ErrNotFound, "Invalid username", c)
 		return
 	}
 	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Internal error": result.Error})
+		SendError(ErrInternalFailure, result.Error.Error(), c)
 		return
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(creds.PlainTextPwd)); err != nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"Authentication error": err.Error()})
+		SendError(ErrUnauthorized, "Password mismatch", c)
 		return
 	}
 
 	accessToken, err := utils.GenerateJWT(user.UserID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"Internal error": err.Error()})
+		SendError(ErrInternalFailure, "Unable to create access token", c)
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"AccessToken": &accessToken})
