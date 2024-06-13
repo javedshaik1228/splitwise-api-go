@@ -76,26 +76,13 @@ func LoginHandler(db *gorm.DB, c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"AccessToken": &accessToken})
 }
 
-func GetUser(db *gorm.DB, id uint) (*models.User, error) {
-	var user models.User
-	err := db.First(&user, id).Error
-	return &user, err
+func GetAllUsers(db *gorm.DB) (*[]models.User, error) {
+	var users []models.User
+	err := db.Find(&users).Error
+	return &users, err
 }
 
-func GetUserByUsername(db *gorm.DB, c *gin.Context) (*models.User, error) {
-	username := c.Param("username")
-	var user models.User
-	result := db.Where("username = ?", username).First(&user)
-	if result.RowsAffected == 0 {
-		return nil, fmt.Errorf("user not found")
-	}
-	if result.Error != nil {
-		return nil, result.Error
-	}
-	return &user, nil
-}
-
-func GetUserIDfromUsername(db *gorm.DB, username string) (uint, error) {
+func getUserIDfromUsername(db *gorm.DB, username string) (uint, error) {
 	var userId uint
 	result := db.Model(&models.User{}).Select("UserID").Where("Username =?", username).Scan(&userId)
 	if result.RowsAffected == 0 {
@@ -107,8 +94,11 @@ func GetUserIDfromUsername(db *gorm.DB, username string) (uint, error) {
 	return userId, nil
 }
 
-func GetAllUsers(db *gorm.DB) (*[]models.User, error) {
-	var users []models.User
-	err := db.Find(&users).Error
-	return &users, err
+func getUsernameFromUserID(db *gorm.DB, userID uint) (string, error) {
+	var user models.User
+	err := db.Select("username").First(&user, userID).Error
+	if err != nil {
+		return "", err
+	}
+	return user.Username, nil
 }

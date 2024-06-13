@@ -7,7 +7,7 @@ import (
 type Group struct {
 	GroupID   uint      `gorm:"primaryKey;autoincrement;column:group_id"`
 	GroupName string    `gorm:"size:100;not null;column:group_name"`
-	AdminId   uint      `gorm:"not null;column:admin_id"`
+	AdminID   uint      `gorm:"not null;column:admin_id"`
 	CreatedAt time.Time `gorm:"default:CURRENT_TIMESTAMP;column:created_at"`
 }
 

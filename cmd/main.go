@@ -55,6 +55,14 @@ func main() {
 		controller.CreateGroup(db, c)
 	})
 
+	r.POST("/addUserToGroup", func(c *gin.Context) {
+		controller.AddMembersToGroup(db, c)
+	})
+
+	r.GET("/groupDetails", func(c *gin.Context) {
+		controller.GetGroupDetails(db, c)
+	})
+
 	r.DELETE("/group", func(c *gin.Context) {
 		controller.DeleteGroup(db, c)
 	})

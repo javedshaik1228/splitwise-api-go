@@ -42,9 +42,9 @@ ErrorResponse and ErrorDetails help to create error json response of structure:
 
 var errorMessages = map[ErrorType]ErrorDetails{
 	ErrBadRequest:      {Code: http.StatusBadRequest, Message: "Bad request"},
-	ErrInternalFailure: {Code: http.StatusInternalServerError, Message: "Internal failure"},
-	ErrNotFound:        {Code: http.StatusNotFound, Message: "Not found"},
 	ErrUnauthorized:    {Code: http.StatusUnauthorized, Message: "Authentication error"},
+	ErrInternalFailure: {Code: http.StatusInternalServerError, Message: "Internal failure"},
+	ErrNotFound:        {Code: http.StatusNotFound, Message: "Resource not found"},
 }
 
 func SendError(errType ErrorType, errDetails string, c *gin.Context) {
